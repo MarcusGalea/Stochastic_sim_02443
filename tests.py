@@ -15,12 +15,14 @@ def KS_test(randn):
     
     return D, pval
 
-def chisquare_test(randn, k):
+def chisquare_test(randn, k = 10):
     n = len(randn)
+    
     p = 1/k
     test = 0
     for i in range(k):
-        xval = randn[randn == i/k]
+        xval = randn[i/k <= randn]
+        xval = xval[xval < (i+1)/k]
         ni = len(xval)
         test += (ni - n*p)**2/(n*p)     
     pval = 1 - chi2.cdf(test, k-1)
@@ -109,7 +111,7 @@ def correlation_coefficient(randn, h=2):
 
 def do_all_tests(randn):
     D, pval1 = KS_test(randn)
-    test1, pval2 = chisquare_test(randn, 10)
+    test1, pval2 = chisquare_test(randn, len(randn)//20)
     test2, pval3 = run_test_1(randn)
     test3, pval4 = run_test_2(randn)
     test4, pval5 = run_test_3(randn)
