@@ -238,11 +238,36 @@ print(f"Width of CI = {round(abs(mean_theta_irn + s * a - mean_theta_irn - s*b),
 
 #%% 7
 def crudeMonteCarloNorm(a,n):
+    Us = rnd.normal(size = n)
+    return sum(Us > a) / n
+n = 10000
+p1 = crudeMonteCarloNorm(2, n)
+p2 = crudeMonteCarloNorm(4, n)
+
+print(f"With {n} samples")
+print(f"Crude probability z larger than 2 is {round(p1 * 100,5)}%")
+print(f"Crude probability z larger than 4 is {round(p2 * 100,5)}%")
+
+def h(a,x):
+    return x > a
+
+sigma1 = 1
+a = 2
+ys = rnd.normal(loc = a,scale = sigma1,size = n)
+fy = stats.norm.pdf(ys)
+gy = stats.norm.pdf(ys, loc = a, scale = sigma1)
+zs = fy / gy * h(a,ys)
+print(f"Probability z larger than 2 with importance sampling {round(np.mean(zs) * 100, 4)}%")
+
+a = 4
+ys = rnd.normal(loc = a,scale = sigma1,size = n)
+fy = stats.norm.pdf(ys)
+gy = stats.norm.pdf(ys, loc = a, scale = sigma1)
+zs = fy / gy * h(a,ys)
+
+print(f"Probability z larger than 4 with importance sampling {round(np.mean(zs) * 100, 4)}%")
+
+
+
+#%%
     
-
-
-
-
-    
-
- 
