@@ -269,5 +269,58 @@ print(f"Probability z larger than 4 with importance sampling {round(np.mean(zs) 
 
 
 
-#%%
-    
+#%% 8
+# From fsolve in maple
+import matplotlib.pyplot as plt
+lambda_opt = 1.354828644
+
+def var_anal(lam):
+    return (-1 + np.exp(2 + lam))/(lam*(2 + lam)) - (np.exp(1) - 1)^2
+
+def variance(lam, n):
+    Us1 = rnd.uniform(size = n)
+    Us2 = rnd.uniform(size = n)
+    return 1/lam * np.mean(np.exp((2+lam)*Us1)) - np.mean(np.exp(Us2))**2
+
+lams = np.linspace(0.09, 5, 200)
+ys = np.zeros(200)
+for i in range(len(lams)):
+    ys[i] = variance(lams[i], 10000)
+
+plt.plot(lams, ys)
+
+def g(x,lam):
+    return lam * np.exp(-lam * x)
+
+def f(x):
+    b1 = x > 0
+    b2 = x < 1
+    return b1 * b2
+def h(x):
+    return np.exp(x)
+
+n = 100
+lam = lambda_opt
+ys = rnd.exponential(scale = 1/lam, size = n)
+
+zs = f(ys) * h(ys) / g(ys, lam)
+
+mean = np.mean(zs)
+var = np.var(zs)
+s = np.sqrt(var / len(zs))
+a = stats.norm.ppf(alpha/2)
+b = stats.norm.ppf(1 - alpha/2)
+print("Using importance sampling")
+print(f"Mean is {round(mean,4)}, with confidence interval [{round(mean + s * a,3)},{round(mean + s * b,3)}]")
+print(f"Width of CI = {round(abs(mean + s * a - mean - s*b),3)}")
+
+n = 100
+Xs_crude = crudeMC(n)
+mean = np.mean(Xs_crude)
+var = np.var(Xs_crude)
+s = np.sqrt(var / len(Xs_crude))
+a = stats.norm.ppf(alpha/2)
+b = stats.norm.ppf(1 - alpha/2)
+print("Using Crude Monte Carlo")
+print(f"Mean is {round(mean,4)}, with confidence interval [{round(mean + s * a,3)},{round(mean + s * b,3)}]")
+print(f"Width of CI = {round(abs(mean + s * a - mean - s*b),3)}")
