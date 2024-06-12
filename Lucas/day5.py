@@ -248,5 +248,93 @@ for i in range(m+1):
         else:
             T += (test[i][j] - true[i][j])**2 / true[i][j]
 
-print("Test Statisic is", T)
+print("Test Statisic is T =", T)
+
+
+
+#%% c Gibbs sampling
+
+def Gibbs(As, n, x0, m):
+    xs = [x0[0]]
+    ys = [x0[1]]
+    A1 = As[0]
+    A2 = As[1]
+    for k in range(1,n):
+        # Generate i and sample from j
+        i = xs[k-1]
+        num_classes_j = int(m - i + 1)
+        ps = np.zeros(num_classes_j)
+        k = 0
+        for j in range(num_classes_j):
+            ps[j] = A2**j / math.factorial(j)
+            k += A2**j / math.factorial(j)
+        ps /= k
+        j = rnd.choice(a=np.arange(num_classes_j), size= 1, p = ps)[0]
+
+        ys.append(j)
+        # Newest j has already been found
+        num_classes_i = int(m-j + 1)
+        ps = np.zeros(num_classes_i )
+        k = 0
+        for i in range(num_classes_i):
+            ps[i] = A2**i / math.factorial(i)
+            k += A2**i / math.factorial(i)
+        ps /= k
+        i = rnd.choice(a=np.arange(num_classes_i), size=1, p = ps)[0]
+        xs.append(i)
+    return np.array(xs), np.array(ys)
+
+def h(hparms):
+    m = hparms[0]
+    return np.randint(low = 0, high = m + 1, size = 0)
+As = [4, 4]
+x0 = [3,3]
+n = 10000
+m = 10
+n_burn = 1000
+xs, ys = Gibbs(As, n + n_burn, x0, m)
+xs = xs[n_burn:]
+ys = ys[n_burn:]
+
+#%%
+sample_hist = np.histogram2d(xs,ys, bins = 11)[0]
+plt.imshow(sample_hist)
+
+# Chisq test
+sample_ints =sample_hist/ n
+true_ints = true / n
+dof = 66
+
+sq = (sample_ints - true_ints)**2
+T = sum(sum(np.divide(sq, true_ints, where = true_ints > 0)))
+
+p = 1 - stats.chi2.cdf(T, df = dof)
+print("Test statistic Gibbs sampling T =", T)
+print("P-value using Gibbs sampling =", p)
+
+# %% Exercise 3
+# 1 
+# Generate ksi and gammam standard normal distribution
+def xigamma():
+    cov = np.array([[1, 1/2], [1/2, 1]])
+    mean = np.array([0, 0])
+
+    x = rnd.multivariate_normal(mean, cov, 1)[0]
+    return x[0], x[1]
+
+def thetapsi():
+    xi, gamma = xigamma()
+    return np.exp(xi), np.exp(gamma)
+
+theta, psi = thetapsi()
+print([theta, psi])
+
+# %%
+# b 
+# 
+def getXs(theta, psi, n):
+    return rnd.normal(loc = theta, scale = psi, size = n)
+n = 10
+Xs = getXs(theta, psi, n)
+print(Xs)
 # %%
