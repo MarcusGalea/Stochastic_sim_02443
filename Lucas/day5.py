@@ -5,24 +5,6 @@ import scipy.stats as stats
 import math as math
 import matplotlib.pyplot as plt
 #%%
-def RWMH(f, g, n, X0):
-    xs = np.zeros(n-1)
-    xs[0] = X0
-    for i in range(1,n):
-        xi = xs[i-1]
-        dx = f()
-        yi = xi + dx
-        gx = g(xi)
-        gy = g(yi)
-        if gy >= gx:
-            xs[i] = yi
-        else:
-            U = rnd.uniform(size = 1)
-            if U <= gy/gx:
-                 xs[i] = yi
-            else:
-                xs[i] = xi
-    return xs
 
 A = 1
 
@@ -312,13 +294,16 @@ p = 1 - stats.chi2.cdf(T, df = dof)
 print("Test statistic Gibbs sampling T =", T)
 print("P-value using Gibbs sampling =", p)
 
+
+
+
+
 # %% Exercise 3
 # 1 
 # Generate ksi and gammam standard normal distribution
 def xigamma():
     cov = np.array([[1, 1/2], [1/2, 1]])
     mean = np.array([0, 0])
-
     x = rnd.multivariate_normal(mean, cov, 1)[0]
     return x[0], x[1]
 
@@ -337,4 +322,69 @@ def getXs(theta, psi, n):
 n = 10
 Xs = getXs(theta, psi, n)
 print(Xs)
-# %%
+# %% c
+
+def f(Theta,Psi):
+    rho = 0.5
+    c = 1 / (2 * np.pi * Theta * Psi * np.sqrt(1 - rho**2))
+    lx = np.log(Theta)
+    ly = np.log(Psi)
+    u = (lx **2 - 2 * rho * lx * ly + ly**2) / (2 * (1 - rho**2))
+    return c * np.exp(-u)
+
+def lh(x, Theta, Psi):
+    ps = sum(np.log(stats.norm.pdf(x, loc = Theta, scale = Psi)))
+    return np.exp(ps)
+
+def h(hparms):
+    mu = hparms[0]
+    sd = hparms[1]
+    Theta = stats.norm.rvs(loc = mu, scale = sd)
+    while Theta < 0:
+        Theta = stats.norm.rvs(loc = mu, scale = sd)
+    Psi =  stats.norm.rvs(loc = mu, scale = sd)
+    while Psi < 0:
+        Psi = stats.norm.rvs(loc = mu, scale = sd)
+    return Theta, Psi
+
+def g(Theta, Psi, x):
+    return f(Theta, Psi) * lh(x, Theta, Psi)
+
+
+def ThetaPsiMH(g, gparms, h, hparms,  n, x0):
+    Thetas = []
+    Psis = []
+    Thetas.append(x0[0])
+    Psis.append(x0[1])
+    Thetaim1 = Thetas[0]
+    Psiim1 = Psis[0]
+    p_old = g(Thetaim1,Psiim1, gparms)
+    for _ in range(1,n):
+        Thetai,Psii = h(hparms)
+        p_new = g(Thetai, Psii, gparms)
+        U = rnd.uniform(size = 1)
+        if U <= min(1, p_new/p_old):
+            Thetas.append(Thetai)
+            Psis.append(Psii)
+            Thetaim1 = Thetai
+            Psiim1 = Psii
+            p_old = p_new
+        else:
+            Thetas.append(Thetaim1)
+            Psis.append(Psiim1)
+    return np.array(Thetas), np.array(Psis)
+
+#%%
+x0 = [2,2]
+hparms = [1, 2]
+m = 5000
+for n in [10, 100, 1000]:
+    theta, psi = thetapsi()
+    gparms = getXs(theta, psi, n)
+    Thetas, Psis = ThetaPsiMH(g, gparms, h, hparms, m, x0)
+    plt.hist(Thetas, density= True, bins = 20)
+    plt.title(f'Theta for n = {n}')
+    plt.show()
+    plt.hist(Psis, density=True, bins = 20)
+    plt.title(f'Psi for n = {n}')
+    plt.show()
