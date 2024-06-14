@@ -68,9 +68,8 @@ Xs_stratified = stratSamples(n)
 normConf(Xs_stratified, alpha, "Stratified Sampling")
 
 
-# %% 5 Changing Marcuss code
+#%%
 from scipy.stats import poisson
-#import exponential
 from scipy.stats import expon
 import bisect
 
@@ -107,7 +106,7 @@ class Customer:
         return servers
 
 from distributions import getExponential, getUniform
-
+#%%
 def transformToZ(parms):
     lam = parms[0]
     n = parms[1]
@@ -133,7 +132,7 @@ def main_loop(event_list, m, repititions = 10):
             elif event.event == "departure":
                 open_servers = event.depart(open_servers)
     return blocked
-
+#%%
 reps = 40
 blocks = np.zeros(reps)
 for i in range(reps):
@@ -144,14 +143,22 @@ for i in range(reps):
     blocks[i] = main_loop(event_list, m, repititions= 10)
 
 # %%
+m = 10 #number of servers
+s = 8 #mean service time
+lam = 1#arrival_intensity
+total_customers =10000 #10*10000
+A = lam*s
+
 blocked_saved = np.array([504, 547, 517, 579, 520, 536, 527, 567, 531, 561, 527,472 ,501, 556,489 ,569, 570, 495, 511, 530, 491, 560, 543, 499, 481, 558 ,565, 569,500, 580, 497, 462, 505, 549, 538, 553, 552, 489, 521, 562])
 
 print(f"Mean Percent Blocked {np.round(np.mean(blocked_saved) / total_customers * 100,3)}%")
 mean = np.mean(blocked_saved) / total_customers * 100
 var = np.var(blocked_saved / total_customers * 100)
 s = np.sqrt(var / len(blocked_saved))
-a = stats.norm.ppf(alpha/2)
-b = stats.norm.ppf(1 - alpha/2)
+dof = len(blocked_saved)- 1
+alpha = 0.05
+a = stats.t.ppf(alpha/2, dof)
+b = stats.t.ppf(1 - alpha/2, dof)
 print(f"Mean is {round(mean,3)}%, with confidence interval [{round(mean + s * a,3)},{round(mean + s * b,3)}]%")
 
 # %% Common random numbers
@@ -291,6 +298,46 @@ plt.plot(lams, ys)
 
 def g(x,lam):
     return lam * np.exp(-lam * x)
+
+def f(x):
+    b1 = x > 0
+    b2 = x < 1
+    return b1 * b2
+def h(x):
+    return np.exp(x)
+
+n = 100
+lam = lambda_opt
+ys = rnd.exponential(scale = 1/lam, size = n)
+
+zs = f(ys) * h(ys) / g(ys, lam)
+
+mean = np.mean(zs)
+var = np.var(zs)
+s = np.sqrt(var / len(zs))
+a = stats.norm.ppf(alpha/2)
+b = stats.norm.ppf(1 - alpha/2)
+print("Using importance sampling")
+print(f"Mean is {round(mean,4)}, with confidence interval [{round(mean + s * a,3)},{round(mean + s * b,3)}]")
+print(f"Width of CI = {round(abs(mean + s * a - mean - s*b),3)}")
+
+n = 100
+Xs_crude = crudeMC(n)
+mean = np.mean(Xs_crude)
+var = np.var(Xs_crude)
+s = np.sqrt(var / len(Xs_crude))
+a = stats.norm.ppf(alpha/2)
+b = stats.norm.ppf(1 - alpha/2)
+print("Using Crude Monte Carlo")
+print(f"Mean is {round(mean,4)}, with confidence interval [{round(mean + s * a,3)},{round(mean + s * b,3)}]")
+print(f"Width of CI = {round(abs(mean + s * a - mean - s*b),3)}")
+
+# %%
+#%% 8
+# From fsolve in maple
+k = 3
+def g(x,lam):
+    return k /(x) * (1/x)**k
 
 def f(x):
     b1 = x > 0

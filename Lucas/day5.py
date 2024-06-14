@@ -314,6 +314,7 @@ def thetapsi():
 theta, psi = thetapsi()
 print([theta, psi])
 
+
 # %%
 # b 
 # 
@@ -373,14 +374,24 @@ def ThetaPsiMH(g, gparms, h, hparms,  n, x0):
             Thetas.append(Thetaim1)
             Psis.append(Psiim1)
     return np.array(Thetas), np.array(Psis)
-
 #%%
 x0 = [2,2]
-hparms = [1, 2]
+hparms = [0, 0.5]
 m = 5000
+# set seed to 0 in numpy
+#rnd.seed(1231232112)
+
+theta, psi = thetapsi()
+Thetas_plot = np.linspace(0.0005,14, 100)
+Psis_plot = np.linspace(0.0005, 14, 100)
+Zs = np.zeros((len(Thetas_plot), len(Psis_plot)))
+for i in range(len(Thetas_plot)):
+    for j in range(len(Psis_plot)):
+        Zs[i,j] = f(Thetas_plot[i], Psis_plot[j])
+
 for n in [10, 100, 1000]:
-    theta, psi = thetapsi()
     gparms = getXs(theta, psi, n)
+    print(np.mean(gparms))
     Thetas, Psis = ThetaPsiMH(g, gparms, h, hparms, m, x0)
     plt.hist(Thetas, density= True, bins = 20)
     plt.title(f'Theta for n = {n}')
@@ -388,3 +399,7 @@ for n in [10, 100, 1000]:
     plt.hist(Psis, density=True, bins = 20)
     plt.title(f'Psi for n = {n}')
     plt.show()
+    plt.hist2d(Thetas, Psis)
+    plt.contour(Thetas_plot, Psis_plot, Zs)
+    plt.show()
+# %%
