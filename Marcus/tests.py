@@ -3,6 +3,14 @@ from scipy.stats import uniform
 from scipy.stats import norm
 from scipy.stats import chi2
 
+def LCG(xval, M, a, c, N):
+    x = np.zeros(N)
+    for i in range(N):
+        xval = (a*xval + c) % M
+        x[i] = xval
+    x/=M
+    return x
+
 def KS_test(randn):
     Ftrue = np.arange(0,1,1/len(randn))
     #import uniform distribution cdf
@@ -15,14 +23,13 @@ def KS_test(randn):
     
     return D, pval
 
-def chisquare_test(randn, k = 10):
+#calculate chi squared
+def chisquare_test(randn, k):
     n = len(randn)
-    
     p = 1/k
     test = 0
     for i in range(k):
-        xval = randn[i/k <= randn]
-        xval = xval[xval < (i+1)/k]
+        xval = randn[(i/k < randn)*(randn < (i+1)/k)]
         ni = len(xval)
         test += (ni - n*p)**2/(n*p)     
     pval = 1 - chi2.cdf(test, k-1)

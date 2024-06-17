@@ -1,4 +1,7 @@
 import numpy as np
+import math
+import numpy.random as rnd
+
 
 def metropolis_hastings(g,N,m, burn_in = None):
     burn_in = burn_in if burn_in is not None else N // 10
@@ -57,3 +60,33 @@ def metropolis_hastings_joint(g_joint,N, burn_in = None, y_sampling_func = y_sam
     # X = np.where(U<prob_of_sampling,X,Y)
     X = X[burn_in:]
     return X
+
+def Gibbs(As, n, x0, m):
+    xs = [x0[0]]
+    ys = [x0[1]]
+    A1 = As[0]
+    A2 = As[1]
+    for k in range(1,n):
+        # Generate i and sample from j
+        i = xs[k-1]
+        num_classes_j = int(m - i + 1)
+        ps = np.zeros(num_classes_j)
+        k = 0
+        for j in range(num_classes_j):
+            ps[j] = A2**j / math.factorial(j)
+            k += A2**j / math.factorial(j)
+        ps /= k
+        j = rnd.choice(a=np.arange(num_classes_j), size= 1, p = ps)[0]
+
+        ys.append(j)
+        # Newest j has already been found
+        num_classes_i = int(m-j + 1)
+        ps = np.zeros(num_classes_i )
+        k = 0
+        for i in range(num_classes_i):
+            ps[i] = A2**i / math.factorial(i)
+            k += A2**i / math.factorial(i)
+        ps /= k
+        i = rnd.choice(a=np.arange(num_classes_i), size=1, p = ps)[0]
+        xs.append(i)
+    return np.array(xs), np.array(ys)
