@@ -335,16 +335,16 @@ print(f"Width of CI = {round(abs(mean + s * a - mean - s*b),3)}")
 # %%
 #%% 8
 # From fsolve in maple
-k = 3
+k = 2
 def g(x,lam):
-    return k /(x) * (1/x)**k
+    return (k-1) /(x) * (1/x)**(k-1)
 
 def f(x):
     b1 = x > 0
     b2 = x < 1
-    return b1 * b2
+    return k /(x) * (1/x)**k
 def h(x):
-    return np.exp(x)
+    return x
 
 n = 100
 lam = lambda_opt
@@ -371,3 +371,4 @@ b = stats.norm.ppf(1 - alpha/2)
 print("Using Crude Monte Carlo")
 print(f"Mean is {round(mean,4)}, with confidence interval [{round(mean + s * a,3)},{round(mean + s * b,3)}]")
 print(f"Width of CI = {round(abs(mean + s * a - mean - s*b),3)}")
+# %%
