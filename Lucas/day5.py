@@ -35,34 +35,39 @@ def WHalgo(g, gparms, h, hparms,  n, x0):
 x0 = 3
 hparms = [10]
 gparms = [8]
-n = 10000
+n = 100000
 m = 40
 areas = []
 ps = []
-for _ in range(m):
-    samples = WHalgo(g, gparms, h, hparms, n, x0)
-    n_burn = 1000
-    n_actual = n - n_burn
+#for _ in range(m):
+samples = WHalgo(g, gparms, h, hparms, n, x0)
+n_burn = 1000
+n_actual = n - n_burn
 
-    samples = samples[n_burn:]
-    expected = []
-    while len(expected) < n_actual:
-        new = stats.poisson.rvs(8, size = 1)
-        if new <= 10:
-            expected.append(new[0])
+samples = samples[n_burn:]
+# Keep only every 25th sample
+samples = samples[::50]
+n_actual = len(samples)
+expected = []
+while len(expected) < n_actual:
+    new = stats.poisson.rvs(8, size = 1)
+    if new <= 10:
+        expected.append(new[0])
 
-    expected = np.array(expected)
-    hist_exp = np.histogram(expected)[0]
-    hist_samples = np.histogram(samples)[0]
-    T = sum((hist_samples - hist_exp)**2 / hist_exp)
-    df = len(hist_samples) - 1
-    ps.append(1 - stats.chi2.cdf(T, df))
+expected = np.array(expected)
+hist_exp = np.histogram(expected)[0]
+hist_samples = np.histogram(samples)[0]
+T = sum((hist_samples - hist_exp)**2 / hist_exp)
+df = len(hist_samples) - 1
+#ps.append(1 - stats.chi2.cdf(T, df))
+p = (1 - stats.chi2.cdf(T, df))
+print(T, p)
 
-#%%
-print("Mean p-value is:", np.mean(ps))
-ps_sorted = np.sort(ps)
-print("Approximated CI for the p-value:")
-print(ps_sorted[2], ps_sorted[37])
+# #%%
+# print("Mean p-value is:", np.mean(ps))
+# ps_sorted = np.sort(ps)
+# print("Approximated CI for the p-value:")
+# print(ps_sorted[2], ps_sorted[37])
 
 # %%
 plt.hist(samples, bins = 11)
@@ -74,11 +79,11 @@ def g(x,y,xparms):
     A2 = xparms[1]
     t1 = int(x)
     t2 = int(y)
-    return A1**t1 / math.factorial(t1) * A2 ** t2 / math.factorial(t2)
+    return (A1**t1 / math.factorial(t1)) * (A2 ** t2 / math.factorial(t2))
 def h(hparms):
     U = rnd.uniform(size = 1)
     m = hparms[0]
-    if U <= 0.5:
+    if U < 0.5:
         x = rnd.randint(low = 0, high = m+1)
         y = rnd.randint(low = 0, high = m+1 - x)
     else:
@@ -113,13 +118,17 @@ def sampleDoublePoisson(n, A1, A2, m):
         x = stats.poisson.rvs(A1, size = 1)
         y = stats.poisson.rvs(A2, size = 1)
         if y + x <= m:
-            xs.append(x[0])
-            ys.append(y[0])
-    return xs, ys
+            if stats.uniform.rvs() <= 0.5:
+                xs.append(x[0])
+                ys.append(y[0])
+            else:
+                xs.append(y[0])
+                ys.append(x[0])
+    return np.array(xs, dtype = int), np.array(ys, dtype = int)
 
-x0 = [3,3]
-n = 50000
-n_burn =10000
+x0 = [0,0]
+n = 500000
+n_burn =1000
 A1 = 4
 A2 = 4
 m = 10
@@ -128,33 +137,75 @@ gparms = [A1, A2]
 
 samples = MVWHalgo(g, gparms, h, hparms, n+n_burn, x0)
 samples = samples[n_burn:]
+
 xs = []
 ys = []
 for i in range(n):
     xs.append(samples[i][0])
     ys.append(samples[i][1])
 
-xs = np.array(xs)
-ys = np.array(ys)
+# Keep only every 50th sample
+xs = xs[::75]
+ys = ys[::75]
+
+xs = np.array(xs ,dtype = int)
+ys = np.array(ys, dtype = int)
+xs_h = np.histogram(xs, bins = 11)[0]
+ys_h = np.histogram(ys, bins = 11)[0]
+print(ys_h)
+print(xs_h)
+#%%
+
+print(stats.chisquare(f_obs = xs_h, f_exp = ys_h))
 plt.hist(xs, bins = 11, alpha = 0.5, label='I-values')
 plt.hist(ys, bins = 11, alpha = 0.5, label='J-values')
 plt.legend(loc = 'upper right')
-#%% Check the sample
-xs_true, ys_true = sampleDoublePoisson(n, A1, A2, m)
-plt.hist(xs_true, bins = 11, alpha = 0.5, label='I-values')
-plt.hist(ys_true, bins = 11, alpha = 0.5, label='J-values')
-plt.title('True Values')
-plt.legend(loc = 'upper right')
+# #%% Check the sample
+
+# n = len(xs)
+# xs_true, ys_true = sampleDoublePoisson(n, A1, A2, m)
+# print(np.histogram(xs_true, bins = 11)[0])
+# print(np.histogram(ys_true, bins = 11)[0])
+# plt.hist(xs_true, bins = 11, alpha = 0.5, label='I-values')
+# plt.hist(ys_true, bins = 11, alpha = 0.5, label='J-values')
+# plt.title('True Values')
+# plt.legend(loc = 'upper right')
 
 #%% Checking with Chi2 dist
-xs_true = np.array(xs_true)
-ys_true = np.array(ys_true)
-test = np.histogram2d(xs, ys, bins = 11)[0]
-true = np.histogram2d(xs_true, ys_true, bins = 11)[0]
+n = len(xs)
+def density(i,j):
+    c = 0.00041121256417273044
+    c = np.exp(-(A1 + A2))
+    return c * A1**i / math.factorial(i) * A2**j / math.factorial(j)
+
+dens = np.zeros((m+1, m+1))
+for i in range(m+1):
+    for j in range(m-i+1):
+        dens[i,j] = density(i,j)
+dens = dens / np.sum(dens)
+
+plt.imshow(dens)
+plt.colorbar()
+#print(dens)
+
+true = np.zeros((m+1, m+1), dtype = int)
+true = dens * n
+
+# ys_true = sum(dens)
+# ys_true = ys_true * n
+# ys_true[3] += 4
+# ys_true = np.array(ys_true, dtype = int)
+# print(sum(ys_true))
+# print(sum(ys_h))
+# print(stats.chisquare(f_obs = ys_h, f_exp = ys_true))
+
+#%%
+#test = np.zeros((m+1, m+1), dtype = int)
+test = np.histogram2d(xs.astype(int), ys.astype(int), bins = 11)[0]
+#true = np.histogram2d(xs_true, ys_true, bins = 11)[0]
 plt.imshow(test)
 plt.colorbar()
-plt.show(
-)
+plt.show()
 
 plt.imshow(true)
 plt.colorbar()
@@ -168,9 +219,10 @@ for i in range(m+1):
 
 df = sum(sum(test != 0))
 ps = 1 - stats.chi2.cdf(T, df)
-print("Mean p-value is:", ps)
+
+print("p-value is:", ps)
 ps_sorted = ps
-print("Approximated CI for the p-value:")
+# print("Approximated CI for the p-value:")
 print("T-value", T)
 
 
@@ -425,4 +477,28 @@ for n in [10, 100, 1000]:
     plt.hist2d(Thetas, Psis)
     plt.contour(Thetas_plot, Psis_plot, Zs)
     plt.show()
+
+
+
+# %%
+
+A1 = 4
+A2 = 4
+m = 10
+P = 0
+
+for i in range(m):
+    for j in range(m-i + 1):
+        P += A1**i / math.factorial(i) * A2**j / math.factorial(j)
+print(P)
+c = 1 / P
+print(c)
+
+
+
+
+plt.imshow(dens)
+
+
+
 # %%
