@@ -69,14 +69,15 @@ def main_loop_array(arrival_intervals, service_times, m):
     event_list = [Customer(arrival_times[i],service_times[i]) for i in range(len(arrival_times))]
     event_list.sort(key=lambda x: x.event_time)
     open_servers = m
-    blocked_array = np.zeros(len(event_list), dtype=bool)
+    blocked_array = np.zeros(len(event_list))
     count = 0
     while event_list:
         event = event_list.pop(0)
         if event.event == "arrival":
             open_servers = event.arrive(open_servers, event_list)
-            blocked_array[count] = event.blocked
-            count +=1
+            blocked_array[count] += event.blocked
+            count += 1
         elif event.event == "departure":
             open_servers = event.depart(open_servers, m)
+    #print(sum(blocked_array))
     return blocked_array

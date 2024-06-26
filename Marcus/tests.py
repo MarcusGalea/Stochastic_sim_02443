@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import uniform
 from scipy.stats import norm
 from scipy.stats import chi2
+from scipy.special import kolmogorov
 
 def LCG(xval, M, a, c, N):
     x = np.zeros(N)
@@ -14,13 +15,14 @@ def LCG(xval, M, a, c, N):
 def KS_test(randn):
     Ftrue = np.arange(0,1,1/len(randn))
     #import uniform distribution cdf
-    F = uniform.cdf(randn)
+    F = np.sort(uniform.cdf(randn))
     #calculate max difference
     D = np.max(np.abs(Ftrue - F))
-    #calculate p value
     n = len(randn)
+    D *= (np.sqrt(n)+0.12+0.11/np.sqrt(n))
+    #calculate p value
     pval = 1 - np.exp(-2*n*D**2)
-    
+    pval = kolmogorov(D)
     return D, pval
 
 #calculate chi squared

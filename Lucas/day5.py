@@ -84,6 +84,8 @@ def h(hparms):
     else:
         y = rnd.randint(low = 0, high = m+1)
         x = rnd.randint(low = 0, high = m+1 - y)
+    if x + y > 10:
+        print("Error")
     return x,y
 
 def MVWHalgo(g, gparms, h, hparms,  n, x0):
